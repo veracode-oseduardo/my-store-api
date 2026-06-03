@@ -5,24 +5,24 @@ import { authRequired, isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Listar productos (público o autenticado, según prefieras)
+// List products (public or authenticated)
 router.get('/', (req, res) => {
   res.json(products);
 });
 
-// Consultar producto por id
+// Get product by id
 router.get('/:id', (req, res) => {
   const id = Number(req.params.id);
   const product = products.find(p => p.id === id);
-  if (!product) return res.status(404).json({ message: 'Producto no encontrado' });
+  if (!product) return res.status(404).json({ message: 'Product does not exist' });
   res.json(product);
 });
 
-// Crear producto (solo admin)
+// Crea a product (only admin user)
 router.post('/', authRequired, isAdmin, (req, res) => {
   const { name, price, stock } = req.body;
   if (!name || price == null || stock == null) {
-    return res.status(400).json({ message: 'name, price y stock son requeridos' });
+    return res.status(400).json({ message: 'name, price and stock are required' });
   }
 
   const newProduct = {
@@ -35,11 +35,11 @@ router.post('/', authRequired, isAdmin, (req, res) => {
   res.status(201).json(newProduct);
 });
 
-// Actualizar producto (solo admin)
+// Update a product (only admin user)
 router.put('/:id', authRequired, isAdmin, (req, res) => {
   const id = Number(req.params.id);
   const product = products.find(p => p.id === id);
-  if (!product) return res.status(404).json({ message: 'Producto no encontrado' });
+  if (!product) return res.status(404).json({ message: 'Product does not exist' });
 
   const { name, price, stock } = req.body;
   if (name !== undefined) product.name = name;
@@ -49,11 +49,11 @@ router.put('/:id', authRequired, isAdmin, (req, res) => {
   res.json(product);
 });
 
-// Eliminar producto (solo admin)
+// Delete a product (only admin user)
 router.delete('/:id', authRequired, isAdmin, (req, res) => {
   const id = Number(req.params.id);
   const index = products.findIndex(p => p.id === id);
-  if (index === -1) return res.status(404).json({ message: 'Producto no encontrado' });
+  if (index === -1) return res.status(404).json({ message: 'Product does not exist' });
 
   const deleted = products.splice(index, 1)[0];
   res.json(deleted);

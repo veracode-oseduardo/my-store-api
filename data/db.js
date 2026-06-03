@@ -1,16 +1,16 @@
 // data/db.js
 
-// Usuarios de ejemplo (password: "123456" en texto plano solo para demo)
+// Sample users (password: "123456" in plain text only for demo)
 export const users = [
   { id: 1, username: 'admin', passwordHash: null, role: 'admin' },
-  { id: 2, username: 'cliente', passwordHash: null, role: 'customer' }
+  { id: 2, username: 'client', passwordHash: null, role: 'customer' }
 ];
 
-// Productos de ejemplo
+// Sample products
 export let products = [
   { id: 1, name: 'Laptop', price: 1200, stock: 10 },
   { id: 2, name: 'Mouse', price: 25, stock: 100 }
 ];
 
-// Compras (orders)
+// Orders
 export let orders = [];
