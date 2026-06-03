@@ -1,62 +1,59 @@
 // routes/products.routes.js
 import express from 'express';
-import { products } from '../data/db.js';
+import { getDb } from '../db/database.js';
 import { authRequired, isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// List products (public or authenticated)
 router.get('/', (req, res) => {
-  res.json(products);
+  const db = getDb();
+  const rows = db.prepare('SELECT id, name, price, stock FROM products').all();
+  db.close();
+  res.json(rows);
 });
 
-// Get product by id
 router.get('/:id', (req, res) => {
   const id = Number(req.params.id);
-  const product = products.find(p => p.id === id);
+  const db = getDb();
+  const product = db.prepare('SELECT id, name, price, stock FROM products WHERE id = ?').get(id);
+  db.close();
   if (!product) return res.status(404).json({ message: 'Product does not exist' });
   res.json(product);
 });
 
-// Crea a product (only admin user)
 router.post('/', authRequired, isAdmin, (req, res) => {
   const { name, price, stock } = req.body;
-  if (!name || price == null || stock == null) {
-    return res.status(400).json({ message: 'name, price and stock are required' });
-  }
+  if (!name || price == null || stock == null) return res.status(400).json({ message: 'name, price and stock are required fields' });
 
-  const newProduct = {
-    id: products.length ? Math.max(...products.map(p => p.id)) + 1 : 1,
-    name,
-    price,
-    stock
-  };
-  products.push(newProduct);
-  res.status(201).json(newProduct);
+  const db = getDb();
+  const info = db.prepare('INSERT INTO products (name, price, stock) VALUES (?, ?, ?)').run(name, price, stock);
+  const product = db.prepare('SELECT id, name, price, stock FROM products WHERE id = ?').get(info.lastInsertRowid);
+  db.close();
+  res.status(201).json(product);
 });
 
-// Update a product (only admin user)
 router.put('/:id', authRequired, isAdmin, (req, res) => {
   const id = Number(req.params.id);
-  const product = products.find(p => p.id === id);
-  if (!product) return res.status(404).json({ message: 'Product does not exist' });
-
   const { name, price, stock } = req.body;
-  if (name !== undefined) product.name = name;
-  if (price !== undefined) product.price = price;
-  if (stock !== undefined) product.stock = stock;
+  const db = getDb();
+  const product = db.prepare('SELECT id FROM products WHERE id = ?').get(id);
+  if (!product) { db.close(); return res.status(404).json({ message: 'Product does not exist' }); }
 
-  res.json(product);
+  db.prepare('UPDATE products SET name = COALESCE(?, name), price = COALESCE(?, price), stock = COALESCE(?, stock) WHERE id = ?')
+    .run(name, price, stock, id);
+  const updated = db.prepare('SELECT id, name, price, stock FROM products WHERE id = ?').get(id);
+  db.close();
+  res.json(updated);
 });
 
-// Delete a product (only admin user)
 router.delete('/:id', authRequired, isAdmin, (req, res) => {
   const id = Number(req.params.id);
-  const index = products.findIndex(p => p.id === id);
-  if (index === -1) return res.status(404).json({ message: 'Product does not exist' });
-
-  const deleted = products.splice(index, 1)[0];
-  res.json(deleted);
+  const db = getDb();
+  const product = db.prepare('SELECT id, name, price, stock FROM products WHERE id = ?').get(id);
+  if (!product) { db.close(); return res.status(404).json({ message: 'Product does not exist' }); }
+  db.prepare('DELETE FROM products WHERE id = ?').run(id);
+  db.close();
+  res.json(product);
 });
 
 export default router;
