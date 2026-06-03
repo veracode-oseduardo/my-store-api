@@ -2,41 +2,28 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { users } from '../data/db.js';
+import { getDb } from '../db/database.js';
 import { JWT_SECRET } from '../config.js';
 
 const router = express.Router();
 
-// Inicializar hashes de ejemplo (solo demo)
-let initialized = false;
-function initUsers() {
-  if (initialized) return;
-  users.forEach(u => {
-    if (!u.passwordHash) {
-      // password por defecto: "123456"
-      u.passwordHash = bcrypt.hashSync('123456', 10);
-    }
-  });
-  initialized = true;
-}
-
 router.post('/login', async (req, res) => {
-  initUsers();
   const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ message: 'username and password are required' });
 
-  const user = users.find(u => u.username === username);
-  if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+  const db = getDb();
+  const row = db.prepare('SELECT id, username, passwordHash, role FROM users WHERE username = ?').get(username);
+  db.close();
 
-  const isValid = await bcrypt.compare(password, user.passwordHash);
-  if (!isValid) return res.status(401).json({ message: 'Invalid credentials' });
+  if (!row) return res.status(401).json({ message: 'MSG1: Invalid credentials' });
 
-  const token = jwt.sign(
-    { id: user.id, username: user.username, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '60s' }
-  );
+  //const valid = await bcrypt.compare(password, row.passwordHash);
+  const valid = await (password === row.passwordHash);
+  if (!valid) return res.status(401).json({ message: 'MSG2: Invalid credentials' });
 
-  res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
+  const token = jwt.sign({ id: row.id, username: row.username, role: row.role }, JWT_SECRET, { expiresIn: '60s' });
+  res.json({ token, user: { id: row.id, username: row.username, role: row.role } });
 });
 
 export default router;
+

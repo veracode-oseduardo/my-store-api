@@ -1,17 +1,27 @@
 version: "3.8"
 services:
+  migrate:
+    build: .
+    command: sh -c "node db/database.js --migrate && node db/database.js --seed"
+    environment:
+      - DATABASE_FILE=/data/mi_tienda.db
+    volumes:
+      - ./data:/data
+    restart: "no"
   api:
+    depends_on:
+      - migrate
     build:
       context: .
-      dockerfile: Dockerfile.dev
-    image: my-store-api:dev
+      dockerfile: Dockerfile
+    image: my-store-api:latest
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=3001
       - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_FILE=/data/mi_tienda.db
     volumes:
-      - ./:/app
-      - /app/node_modules
+      - ./data:/data
     restart: unless-stopped
