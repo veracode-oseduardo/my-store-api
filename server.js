@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
+import { SERVER } from './config.js';
 import { PORT } from './config.js';
 import authRoutes from './routes/auth.routes.js';
 import productsRoutes from './routes/products.routes.js';
@@ -26,5 +27,5 @@ app.get('/api/health', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`API escuchando en http://localhost:${PORT}`);
+  console.log(`API escuchando en http://${SERVER}:${PORT}`);
 });

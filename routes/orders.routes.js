@@ -5,21 +5,21 @@ import { authRequired } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Listar órdenes del usuario autenticado
+// List orders of authenticated user
 router.get('/', authRequired, (req, res) => {
   const userId = req.user.id;
   const userOrders = orders.filter(o => o.userId === userId);
   res.json(userOrders);
 });
 
-// Crear una orden (compra)
+// Create an order
 router.post('/', authRequired, (req, res) => {
   const userId = req.user.id;
   const { items } = req.body;
   // items: [{ productId, quantity }, ...]
 
   if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ message: 'items es requerido y debe ser un array' });
+    return res.status(400).json({ message: 'items is a required field and should be an array' });
   }
 
   let total = 0;
@@ -28,10 +28,10 @@ router.post('/', authRequired, (req, res) => {
   for (const item of items) {
     const product = products.find(p => p.id === item.productId);
     if (!product) {
-      return res.status(400).json({ message: `Producto ${item.productId} no existe` });
+      return res.status(400).json({ message: `Product ${item.productId} does not exist` });
     }
     if (product.stock < item.quantity) {
-      return res.status(400).json({ message: `Stock insuficiente para producto ${product.name}` });
+      return res.status(400).json({ message: `Insuficient stock for this product ${product.name}` });
     }
 
     const lineTotal = product.price * item.quantity;
@@ -45,7 +45,7 @@ router.post('/', authRequired, (req, res) => {
     });
   }
 
-  // Descontar stock
+  // Decrease stock
   for (const item of items) {
     const product = products.find(p => p.id === item.productId);
     product.stock -= item.quantity;
