@@ -1,13 +1,17 @@
 # my-store-api
 
-# To run by using docker compose
+# To run it manually
+
+npm install
+npm run migrate
+npm run seed
+npm start
+
+# To run it with docker compose
+
 docker compose up --build -d
 
 # To verify logs
+
 docker compose logs -f
 
-
-
-
-# To delete container with volume
-docker rm -v nombre_del_contenedor
