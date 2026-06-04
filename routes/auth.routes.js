@@ -7,6 +7,15 @@ import { JWT_SECRET } from '../config.js';
 
 const router = express.Router();
 
+router.get('/login/getUsers', (req, res) => {
+  const db = getDb();
+  const rows = db.prepare('SELECT id, username, passwordHash, role FROM users').all();
+  db.close();
+  res.json(rows);
+  console.log('[INFO] - Request: ' + req);
+  console.log('[INFO] - Response: ' + res)
+});
+
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ message: 'username and password are required' });
