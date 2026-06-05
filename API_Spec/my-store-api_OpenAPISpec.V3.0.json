@@ -1,0 +1,925 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "My Store API V3.0",
+    "version": "1.0.0",
+    "description": "Demo API for authentication, orders and products management"
+  },
+  "servers": [
+    {
+      "url": "http://mytesthost:3001",
+      "description": "Local development"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "role"
+        ],
+        "example": {
+          "id": 1,
+          "username": "admin",
+          "role": "admin"
+        }
+      },
+      "UserWithPassword": {
+        "type": "object",
+        "description": "User record including passwordHash (SENSITIVE). Returned by admin/debug endpoints only.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "passwordHash": {
+            "type": "string",
+            "description": "Hashed password (sensitive)"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "passwordHash",
+          "role"
+        ],
+        "example": {
+          "id": 1,
+          "username": "admin",
+          "passwordHash": "<REDACTED_HASH>",
+          "role": "admin"
+        }
+      },
+      "AuthRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "example": {
+          "username": "admin",
+          "password": "your-password"
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "exp": {
+            "type": "integer",
+            "description": "Expiration time as seconds since epoch"
+          }
+        },
+        "required": [
+          "token",
+          "user",
+          "exp"
+        ],
+        "example": {
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...<placeholder>",
+          "user": {
+            "id": 1,
+            "username": "admin",
+            "role": "admin"
+          },
+          "exp": 1780600432
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "price": {
+            "type": "number",
+            "format": "float"
+          },
+          "lineTotal": {
+            "type": "number",
+            "format": "float"
+          }
+        },
+        "required": [
+          "productId",
+          "quantity",
+          "price",
+          "lineTotal"
+        ]
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "userId": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "total": {
+            "type": "number",
+            "format": "float"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "items",
+          "total",
+          "createdAt"
+        ]
+      },
+      "OrderCreateRequest": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productId": {
+                  "type": "integer"
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "productId",
+                "quantity"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "example": {
+          "items": [
+            {
+              "productId": 1,
+              "quantity": 2
+            },
+            {
+              "productId": 2,
+              "quantity": 1
+            }
+          ]
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "format": "float"
+          },
+          "stock": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "stock"
+        ],
+        "example": {
+          "id": 1,
+          "name": "Laptop",
+          "price": 1200.5,
+          "stock": 10
+        }
+      },
+      "ProductCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0
+          },
+          "stock": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "price",
+          "stock"
+        ],
+        "example": {
+          "name": "Mouse",
+          "price": 25.0,
+          "stock": 100
+        }
+      },
+      "ProductUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0
+          },
+          "stock": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "example": {
+          "name": "Mouse inalámbrico",
+          "price": 29.99,
+          "stock": 90
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          }
+        },
+        "example": {
+          "message": "Error message",
+          "code": "ERR_GENERIC"
+        }
+      }
+    },
+    "parameters": {
+      "ProductIdParam": {
+        "name": "id",
+        "in": "path",
+        "description": "Product ID",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "example": 1
+      },
+      "LimitParam": {
+        "name": "limit",
+        "in": "query",
+        "description": "Maximum number of items to return",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "example": 20
+      },
+      "OffsetParam": {
+        "name": "offset",
+        "in": "query",
+        "description": "Number of items to skip",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "example": 0
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "Unauthorized"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "BadRequest",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "BadRequest"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "NotFound",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "Resource not found"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "Forbidden: admin scope required"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/auth/login/getUsers": {
+      "get": {
+        "summary": "Get all users (Sensitive Information)",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Returns all users including passwordHash (SENSITIVE). Implementation note: current server returns passwordHash for all users without role check. This endpoint MUST be restricted to admin-only in production or removed from public docs.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users list (sensitive)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserWithPassword"
+                  }
+                },
+                "example": [
+                  {
+                    "id": 1,
+                    "username": "admin",
+                    "passwordHash": "<REDACTED_HASH>",
+                    "role": "admin"
+                  },
+                  {
+                    "id": 2,
+                    "username": "user",
+                    "passwordHash": "<REDACTED_HASH>",
+                    "role": "user"
+                  }
+                ]
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "User login",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Authenticate user and return JWT token. Implementation note: code imports bcrypt but currently compares plaintext (password === passwordHash). Recommended: use bcrypt.compare(password, passwordHash). Token lifetime in code: 60s (development).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRequest"
+              },
+              "example": {
+                "username": "admin",
+                "password": "your-password"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                },
+                "example": {
+                  "token": "eyJ...<placeholder>",
+                  "user": {
+                    "id": 1,
+                    "username": "admin",
+                    "role": "admin"
+                  },
+                  "exp": 1780600432
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "username and password are required"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "userNotFound": {
+                    "value": {
+                      "message": "MSG1: Invalid credentials"
+                    }
+                  },
+                  "badPassword": {
+                    "value": {
+                      "message": "MSG2: Invalid credentials"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "get": {
+        "summary": "Get orders for the authenticated user",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Returns orders for the authenticated user. Expected behavior: use req.user.id (from auth middleware). Implementation note: current code references req.body.user.id — this is a bug; ensure server uses req.user.id.",
+        "responses": {
+          "200": {
+            "description": "List of orders for the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  }
+                },
+                "example": [
+                  {
+                    "id": 1,
+                    "userId": 1,
+                    "items": [
+                      {
+                        "productId": 1,
+                        "name": "Laptop",
+                        "quantity": 1,
+                        "price": 1200.5,
+                        "lineTotal": 1200.5
+                      }
+                    ],
+                    "total": 1200.5,
+                    "createdAt": "2026-06-05T09:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create new order for the authenticated user",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Creates an order in a transaction, decrements product stock, and returns the created order. Business errors: product not found, insufficient stock.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreateRequest"
+              },
+              "example": {
+                "items": [
+                  {
+                    "productId": 1,
+                    "quantity": 2
+                  },
+                  {
+                    "productId": 2,
+                    "quantity": 1
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                },
+                "example": {
+                  "id": 10,
+                  "userId": 1,
+                  "items": [
+                    {
+                      "productId": 1,
+                      "name": "Laptop",
+                      "quantity": 2,
+                      "price": 1200.5,
+                      "lineTotal": 2401.0
+                    }
+                  ],
+                  "total": 2401.0,
+                  "createdAt": "2026-06-05T09:05:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or business error (product not found, insufficient stock)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "productNotFound": {
+                    "value": {
+                      "message": "Product 5 does not exist"
+                    }
+                  },
+                  "insufficientStock": {
+                    "value": {
+                      "message": "Insuficient stock of Mouse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "summary": "List all products (public)",
+        "tags": [
+          "Products"
+        ],
+        "description": "Public endpoint listing products. Implementation note: current implementation returns all rows without pagination and uses direct SQL string concatenation in other endpoints — use parameterized queries and add pagination in production.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          },
+          {
+            "$ref": "#/components/parameters/OffsetParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": 1,
+                      "name": "Laptop",
+                      "price": 1200.5,
+                      "stock": 10
+                    },
+                    {
+                      "id": 2,
+                      "name": "Mouse",
+                      "price": 25.0,
+                      "stock": 100
+                    }
+                  ],
+                  "total": 2
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create new product (admin)",
+        "tags": [
+          "Products"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Create a new product. Requires admin privileges. Implementation note: server must validate input and use parameterized INSERT statements to avoid SQL injection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductCreate"
+              },
+              "example": {
+                "name": "Teclado",
+                "price": 45.0,
+                "stock": 50
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/products/{id}": {
+      "get": {
+        "summary": "Get a product by ID",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProductIdParam"
+          }
+        ],
+        "description": "Returns a single product. Implementation note: current code uses string concatenation for the id in SQL; production must use parameter binding (e.g., `db.get('SELECT ... WHERE id = ?', id)`).",
+        "responses": {
+          "200": {
+            "description": "Product found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Internal Server Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a product (admin)",
+        "tags": [
+          "Products"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProductIdParam"
+          }
+        ],
+        "description": "Update product fields. Requires admin. Implementation note: current code concatenates values into SQL and passes parameters incorrectly; use parameterized UPDATE with COALESCE or explicit fields and validate types.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductUpdate"
+              },
+              "example": {
+                "name": "Laptop Pro",
+                "price": 1350.0,
+                "stock": 8
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a product (admin)",
+        "tags": [
+          "Products"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProductIdParam"
+          }
+        ],
+        "description": "Delete a product by id. Requires admin. Implementation note: current code contains a bug using an incorrect SELECT and an undefined `id` variable for DELETE; ensure server first fetches the product with parameter binding, then deletes using the same bound id within a transaction.",
+        "responses": {
+          "200": {
+            "description": "Product deleted (returns the deleted product)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  }
+}

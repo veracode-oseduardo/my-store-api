@@ -19,6 +19,6 @@ export function authRequired(req, res, next) {
 }
 
 export function isAdmin(req, res, next) {
-  if (req.user?.role !== 'admin') return res.status(403).json({ message: 'Access only for admin users' });
+  if (req.user?.role !== 'admin') return res.status(403).json({ message: 'Invalid or expired token' });//Access only for admin users
   next();
 }
