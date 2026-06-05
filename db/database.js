@@ -1,43 +1,40 @@
 import fs from 'fs';
 import path from 'path';
-import Database from 'better-sqlite3';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 import bcrypt from 'bcryptjs';
 import { DB_FILE } from '../config.js';
 
 const migrations = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'migrations.sql'), 'utf8');
 const seedSql = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'seed.sql'), 'utf8');
 
-function openDb() {
+export async function openDb() {
   const dir = path.dirname(DB_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const db = new Database(DB_FILE);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  const db = await open({ filename: DB_FILE, driver: sqlite3.Database });
+  await db.exec('PRAGMA journal_mode = WAL');
+  await db.exec('PRAGMA foreign_keys = ON');
   return db;
 }
 
-function migrate() {
-  const db = openDb();
-  db.exec(migrations);
+export async function migrate() {
+  const db = await openDb();
+  await db.exec(migrations);
   console.log('Migrations have been applied');
-  db.close();
+  await db.close();
 }
 
-function seed() {
-  const db = openDb();
-  // Execute seed by replacing deafult password hash 123456
-  db.exec(migrations);
-  //const hash = bcrypt.hashSync('123456', 10);
-  //const seedWithHash = seedSql.replace(/PLACEHOLDER_HASH/g, hash);
-  //db.exec(seedWithHash);
-  db.exec(seedSql);
+export async function seed() {
+  const db = await openDb();
+  await db.exec(migrations);
+  await db.exec(seedSql);
   console.log('Seed data inserted');
-  db.close();
+  await db.close();
 }
 
-if (process.argv.includes('--migrate')) migrate();
-if (process.argv.includes('--seed')) seed();
+if (process.argv.includes('--migrate')) await migrate();
+if (process.argv.includes('--seed')) await seed();
 
-export function getDb() {
+export async function getDb() {
   return openDb();
 }

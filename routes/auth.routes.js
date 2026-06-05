@@ -7,22 +7,29 @@ import { JWT_SECRET } from '../config.js';
 
 const router = express.Router();
 
+router.get('/login/getUsers', async (req, res) => {
+  const db = await getDb();
+  const rows = await db.all('SELECT id, username, passwordHash, role FROM users');
+  await db.close();
+  res.json(rows);
+});
+
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ message: 'username and password are required' });
 
-  const db = getDb();
-  const row = db.prepare('SELECT id, username, passwordHash, role FROM users WHERE username = ?').get(username);
-  db.close();
+  const db = await getDb();
+  const row = await db.get('SELECT id, username, passwordHash, role FROM users WHERE username = ?', username);
+  await db.close();
 
   if (!row) return res.status(401).json({ message: 'MSG1: Invalid credentials' });
 
-  //const valid = await bcrypt.compare(password, row.passwordHash);
   const valid = await (password === row.passwordHash);
   if (!valid) return res.status(401).json({ message: 'MSG2: Invalid credentials' });
 
   const token = jwt.sign({ id: row.id, username: row.username, role: row.role }, JWT_SECRET, { expiresIn: '60s' });
-  res.json({ token, user: { id: row.id, username: row.username, role: row.role } });
+  const decoded = jwt.decode(token);
+  res.status(200).json({ token: token, user: { id: row.id, username: row.username, role: row.role }, exp: decoded.exp });
 });
 
 export default router;
